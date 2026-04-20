@@ -1,0 +1,646 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>Quản lý lô hàng - Chia lãi theo tỷ lệ vốn góp (có tên sản phẩm)</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            font-family: system-ui, 'Segoe UI', 'Roboto', 'Helvetica Neue', sans-serif;
+        }
+
+        body {
+            background: linear-gradient(145deg, #eef2f7 0%, #d9e2ef 100%);
+            margin: 0;
+            padding: 24px;
+            min-height: 100vh;
+        }
+
+        .app-container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .card {
+            background: rgba(255, 255, 255, 0.96);
+            border-radius: 2rem;
+            box-shadow: 0 20px 35px -12px rgba(0, 0, 0, 0.2);
+            padding: 1.6rem 2rem;
+            margin-bottom: 1.8rem;
+            transition: all 0.2s;
+            border: 1px solid rgba(255,255,255,0.7);
+        }
+
+        h1, h2, h3 {
+            font-weight: 600;
+            margin-top: 0;
+            color: #0f172a;
+        }
+
+        h1 {
+            font-size: 1.9rem;
+            background: linear-gradient(135deg, #0f2b3d, #1e4a6e);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            display: inline-block;
+        }
+
+        .badge {
+            background: #e6f0ff;
+            padding: 0.3rem 1rem;
+            border-radius: 40px;
+            font-size: 0.85rem;
+            font-weight: 500;
+        }
+
+        .grid-2col {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1.8rem;
+        }
+
+        @media (max-width: 850px) {
+            .grid-2col {
+                grid-template-columns: 1fr;
+                gap: 1.2rem;
+            }
+            .card {
+                padding: 1.2rem;
+            }
+        }
+
+        label {
+            font-weight: 600;
+            display: block;
+            margin-top: 0.6rem;
+            margin-bottom: 0.25rem;
+            color: #1e293b;
+        }
+
+        input, button {
+            width: 100%;
+            padding: 0.7rem 1rem;
+            border-radius: 1.2rem;
+            border: 1px solid #cbd5e1;
+            font-size: 0.95rem;
+            background: white;
+        }
+
+        input:focus {
+            outline: none;
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 3px rgba(59,130,246,0.2);
+        }
+
+        button {
+            background: #1e293b;
+            color: white;
+            font-weight: bold;
+            border: none;
+            cursor: pointer;
+            transition: 0.2s;
+            margin-top: 0.8rem;
+        }
+
+        button:hover {
+            background: #0f172a;
+            transform: scale(0.98);
+        }
+
+        .btn-primary {
+            background: #0f3b2c;
+        }
+        .btn-primary:hover {
+            background: #0a2a1f;
+        }
+        .btn-secondary {
+            background: #475569;
+        }
+        
+        .flex-between {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 1rem 0;
+        }
+
+        th, td {
+            text-align: left;
+            padding: 0.7rem 0.4rem;
+            border-bottom: 1px solid #e2e8f0;
+        }
+
+        th {
+            color: #1e293b;
+            font-weight: 600;
+            background: #f1f5f9;
+        }
+
+        .delete-row {
+            background: none;
+            border: none;
+            color: #dc2626;
+            font-size: 1.2rem;
+            cursor: pointer;
+            width: auto;
+            padding: 0 0.4rem;
+            margin: 0;
+        }
+
+        .result-box {
+            background: #f0fdf4;
+            border-radius: 1.5rem;
+            padding: 1.2rem;
+            margin-top: 1rem;
+            border: 1px solid #bbf7d0;
+        }
+
+        .investor-card {
+            background: #f8fafc;
+            border-radius: 1.2rem;
+            padding: 1rem;
+            text-align: center;
+            flex: 1;
+            min-width: 150px;
+            border: 1px solid #e2e8f0;
+            transition: 0.1s;
+        }
+
+        .investor-grid {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1rem;
+            margin: 1rem 0;
+        }
+
+        .big-number {
+            font-size: 1.8rem;
+            font-weight: 800;
+            color: #0f3b2c;
+        }
+
+        hr {
+            margin: 1.2rem 0;
+        }
+
+        .info-note {
+            font-size: 0.8rem;
+            color: #475569;
+            margin-top: 0.5rem;
+        }
+
+        .summary-highlight {
+            background: #eef2ff;
+            padding: 0.8rem;
+            border-radius: 1rem;
+            font-weight: 500;
+        }
+
+        .profit-percent {
+            font-size: 0.75rem;
+            color: #2d6a4f;
+            font-weight: 500;
+        }
+
+        .product-name-badge {
+            background: #e2e3e8;
+            padding: 0.2rem 0.5rem;
+            border-radius: 30px;
+            font-size: 0.8rem;
+            font-weight: 500;
+            display: inline-block;
+        }
+    </style>
+</head>
+<body>
+<div class="app-container">
+    <!-- Header -->
+    <div class="card" style="background: #ffffffdd;">
+        <div class="flex-between">
+            <div>
+                <h1>📦 Quản lý lô hàng & chia lãi theo tỷ lệ vốn góp</h1>
+                <p>Nhập từng lô sản phẩm kèm <strong>tên sản phẩm</strong> | Tổng hợp doanh thu, vốn, lãi | Ai góp vốn nhiều hơn → nhận lãi nhiều hơn</p>
+            </div>
+            <div class="badge">🏷️ Có tên sản phẩm | 📊 Chia lãi theo tỷ lệ vốn</div>
+        </div>
+    </div>
+
+    <div class="grid-2col">
+        <!-- Cột trái: NHẬP CÁC LÔ HÀNG (có tên sản phẩm) -->
+        <div class="card">
+            <h2>📝 Nhập từng lô sản phẩm</h2>
+            <div class="info-note">Ví dụ: "Áo thun", 20 sp giá nhập 70k, bán 100k → lãi 30k/sp</div>
+            
+            <label>🏷️ Tên sản phẩm</label>
+            <input type="text" id="productNameInput" placeholder="VD: Áo thun, Quần jean, Giày..." value="Sản phẩm mới">
+            
+            <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px;">
+                <div><label>📦 Số lượng</label><input type="number" id="quantityInput" placeholder="vd: 20" value="20"></div>
+                <div><label>📥 Giá nhập (k)</label><input type="number" id="importPriceInput" placeholder="vd: 70" value="70"></div>
+                <div><label>💰 Giá bán (k)</label><input type="number" id="sellPriceInput" placeholder="vd: 100" value="100"></div>
+            </div>
+            <button id="addBatchBtn" class="btn-primary" style="background:#2c5f2d;">➕ Thêm lô hàng</button>
+            
+            <h3 style="margin-top: 1.5rem;">📋 Danh sách các lô hàng đã nhập</h3>
+            <div style="overflow-x: auto;">
+                <table id="batchTable">
+                    <thead>
+                        <tr><th>Tên SP</th><th>SL</th><th>Giá nhập (k)</th><th>Giá bán (k)</th><th>Tổng vốn (k)</th><th>Tổng thu (k)</th><th>Lãi (k)</th><th></th></tr>
+                    </thead>
+                    <tbody id="batchTableBody">
+                        <tr><td colspan="8" style="text-align:center;">Chưa có lô hàng nào</td></tr>
+                    </tbody>
+                </table>
+            </div>
+            <div class="flex-between" style="margin-top: 0.5rem;">
+                <button id="clearAllBtn" class="btn-secondary" style="width: auto;">🗑️ Xóa tất cả</button>
+                <button id="demoExampleBtn" style="width: auto; background:#3b82f6;">📋 Tải ví dụ 100sp (có tên)</button>
+            </div>
+        </div>
+
+        <!-- Cột phải: VỐN GÓP & CHIA LÃI THEO TỶ LỆ -->
+        <div class="card">
+            <h2>💰 Vốn góp của từng nhà đầu tư</h2>
+            <div class="info-note">Nhập số tiền mỗi người bỏ ra (đơn vị: nghìn VNĐ). Ai góp nhiều vốn hơn sẽ nhận lãi nhiều hơn.</div>
+            <div class="investor-grid" id="investorCapitalInputs"></div>
+            <button id="applyCapitalBtn">💾 Cập nhật vốn góp & chia lãi theo tỷ lệ</button>
+            
+            <div class="result-box" id="resultBox">
+                <h3 style="margin: 0 0 12px 0;">📊 Kết quả chia lãi (theo tỷ lệ vốn góp)</h3>
+                <div id="investorResultGrid" class="investor-grid"></div>
+                <div class="info-note" id="explainNote">
+                    ✅ Công thức: <strong>Lợi nhuận mỗi người = (Vốn người đó / Tổng vốn góp) × Tổng lợi nhuận từ bán hàng</strong><br>
+                    💡 Vốn góp càng lớn → nhận lãi càng nhiều. Sau khi bán hết hàng, mỗi người nhận lại <strong>toàn bộ vốn góp ban đầu + lãi</strong>.
+                </div>
+            </div>
+            
+            <div class="summary-highlight" style="margin-top: 1rem;">
+                <div class="flex-between"><span>📦 Tổng số lượng sản phẩm:</span><strong id="totalQtySpan">0</strong></div>
+                <div class="flex-between"><span>💸 Tổng vốn nhập hàng:</span><strong id="totalCapitalSpan">0</strong> k</div>
+                <div class="flex-between"><span>🏷️ Tổng doanh thu (bán hết):</span><strong id="totalRevenueSpan">0</strong> k</div>
+                <div class="flex-between"><span>✨ Tổng lợi nhuận:</span><strong id="totalProfitSpan">0</strong> k</div>
+                <div class="flex-between"><span>👥 Tổng vốn góp từ các nhà đầu tư:</span><strong id="totalInvestedCapitalSpan">0</strong> k</div>
+            </div>
+            <button id="resetToImportCapitalBtn" class="btn-secondary" style="margin-top: 0.5rem;">🔄 Đặt vốn góp = tổng vốn nhập hàng (chia đều)</button>
+        </div>
+    </div>
+
+    <!-- Dòng giải thích logic -->
+    <div class="card">
+        <div class="flex-between">
+            <span><strong>📐 Nguyên tắc chia lãi theo tỷ lệ vốn:</strong> Lợi nhuận phân phối tỷ lệ thuận với số vốn mỗi người góp.</span>
+            <span><strong>💰 Ví dụ:</strong> A góp 500tr, B góp 300tr, C góp 200tr, tổng lãi 300tr → A nhận 150tr, B nhận 90tr, C nhận 60tr.</span>
+        </div>
+        <div class="info-note" style="margin-top: 8px;">🎯 Bạn có thể nhập vốn góp bất kỳ, không nhất thiết bằng tổng vốn nhập hàng. Hệ thống vẫn tính lãi theo tỷ lệ vốn góp thực tế.</div>
+    </div>
+</div>
+
+<script>
+    // ---------- DỮ LIỆU ----------
+    // batches: mỗi batch = { productName, qty, importPrice, sellPrice } (đơn vị: nghìn đồng)
+    let batches = [];
+    
+    // 3 nhà đầu tư với số vốn góp (nghìn đồng)
+    let investors = [
+        { id: 0, name: "Nhà đầu tư A", contributedCapital: 0 },
+        { id: 1, name: "Nhà đầu tư B", contributedCapital: 0 },
+        { id: 2, name: "Nhà đầu tư C", contributedCapital: 0 }
+    ];
+    
+    // Helper: tính tổng vốn nhập (tiền mua hàng thực tế)
+    function getTotalImportCapital() {
+        let total = 0;
+        for(let b of batches) {
+            total += b.qty * b.importPrice;
+        }
+        return total;
+    }
+    
+    // Tổng doanh thu khi bán hết
+    function getTotalRevenue() {
+        let total = 0;
+        for(let b of batches) {
+            total += b.qty * b.sellPrice;
+        }
+        return total;
+    }
+    
+    // Tổng lợi nhuận
+    function getTotalProfit() {
+        let total = 0;
+        for(let b of batches) {
+            total += b.qty * (b.sellPrice - b.importPrice);
+        }
+        return total;
+    }
+    
+    // Tổng vốn góp từ các nhà đầu tư
+    function getTotalInvestedCapital() {
+        return investors.reduce((sum, inv) => sum + inv.contributedCapital, 0);
+    }
+    
+    // Chia lãi theo tỷ lệ vốn góp
+    function getProfitSharing() {
+        const totalProfit = getTotalProfit();
+        const totalInvested = getTotalInvestedCapital();
+        
+        if (totalInvested === 0) {
+            return investors.map(inv => ({
+                ...inv,
+                ratio: 0,
+                profitReceived: 0,
+                totalReceive: inv.contributedCapital,
+                error: true
+            }));
+        }
+        
+        const shares = investors.map(inv => {
+            const ratio = inv.contributedCapital / totalInvested;
+            const profitReceived = totalProfit * ratio;
+            const totalReceive = inv.contributedCapital + profitReceived;
+            return {
+                ...inv,
+                ratio: ratio,
+                profitReceived: profitReceived,
+                totalReceive: totalReceive
+            };
+        });
+        return shares;
+    }
+    
+    // Lưu dữ liệu vào localStorage
+    function saveData() {
+        localStorage.setItem("product_batches_named", JSON.stringify(batches));
+        localStorage.setItem("investors_capitals", JSON.stringify(investors.map(i => i.contributedCapital)));
+    }
+    
+    function loadData() {
+        const storedBatches = localStorage.getItem("product_batches_named");
+        if(storedBatches) {
+            try {
+                batches = JSON.parse(storedBatches);
+            } catch(e) { batches = []; }
+        } else {
+            batches = [];
+        }
+        
+        const storedCaps = localStorage.getItem("investors_capitals");
+        if(storedCaps) {
+            try {
+                let caps = JSON.parse(storedCaps);
+                if(Array.isArray(caps) && caps.length === 3) {
+                    for(let i=0;i<3;i++) investors[i].contributedCapital = caps[i];
+                } else {
+                    setDefaultEqualCapital();
+                }
+            } catch(e) { setDefaultEqualCapital(); }
+        } else {
+            setDefaultEqualCapital();
+        }
+    }
+    
+    // Đặt vốn góp mặc định = tổng vốn nhập hàng chia đều cho 3 người
+    function setDefaultEqualCapital() {
+        const totalImport = getTotalImportCapital();
+        const equalPart = totalImport / 3;
+        for(let i=0; i<investors.length; i++) {
+            investors[i].contributedCapital = equalPart;
+        }
+        saveData();
+    }
+    
+    // Đặt vốn góp bằng đúng tổng vốn nhập hàng (chia đều)
+    function resetToImportCapital() {
+        const totalImport = getTotalImportCapital();
+        const equalPart = totalImport / 3;
+        for(let i=0; i<investors.length; i++) {
+            investors[i].contributedCapital = equalPart;
+        }
+        saveData();
+        renderAll();
+    }
+    
+    // Cập nhật vốn từ input (người dùng sửa)
+    function updateCapitalsFromInputs() {
+        for(let i=0; i<investors.length; i++) {
+            const inp = document.getElementById(`inv_capital_${i}`);
+            if(inp) {
+                let val = parseFloat(inp.value);
+                if(!isNaN(val) && val >= 0) investors[i].contributedCapital = val;
+                else investors[i].contributedCapital = 0;
+            }
+        }
+        saveData();
+        renderAll();
+    }
+    
+    // Thêm lô hàng (có tên sản phẩm)
+    function addBatch(productName, qty, importPrice, sellPrice) {
+        if(!productName || productName.trim() === "") {
+            alert("Vui lòng nhập tên sản phẩm");
+            return false;
+        }
+        if(qty <= 0 || isNaN(qty)) { alert("Số lượng phải > 0"); return false; }
+        if(importPrice < 0 || sellPrice <= 0) { alert("Giá nhập/bán không hợp lệ"); return false; }
+        
+        batches.push({
+            productName: productName.trim(),
+            qty: qty,
+            importPrice: importPrice,
+            sellPrice: sellPrice
+        });
+        saveData();
+        renderAll();
+        return true;
+    }
+    
+    function deleteBatch(index) {
+        if(index >= 0 && index < batches.length) {
+            batches.splice(index, 1);
+            saveData();
+            renderAll();
+        }
+    }
+    
+    function clearAllBatches() {
+        batches = [];
+        saveData();
+        renderAll();
+    }
+    
+    // Ví dụ 100sp theo yêu cầu: 20sp (70->100), 20sp (100->150), 20sp (150->200), 20sp (90->120), 20sp (120->160) + có tên sản phẩm
+    function loadExampleData() {
+        batches = [];
+        batches.push({ productName: "Áo sơ mi", qty: 20, importPrice: 70, sellPrice: 100 });
+        batches.push({ productName: "Quần tây", qty: 20, importPrice: 100, sellPrice: 150 });
+        batches.push({ productName: "Giày da", qty: 20, importPrice: 150, sellPrice: 200 });
+        batches.push({ productName: "Mũ bảo hiểm", qty: 20, importPrice: 90, sellPrice: 120 });
+        batches.push({ productName: "Balo", qty: 20, importPrice: 120, sellPrice: 160 });
+        saveData();
+        setDefaultEqualCapital();
+        renderAll();
+    }
+    
+    // Render toàn bộ giao diện
+    function renderAll() {
+        renderBatchTable();
+        renderInvestorCapitalInputs();
+        renderInvestorResult();
+        updateTotalsUI();
+    }
+    
+    function renderBatchTable() {
+        const tbody = document.getElementById("batchTableBody");
+        if(!batches.length) {
+            tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;">Chưa có lô hàng nào. Hãy thêm lô hoặc bấm "Tải ví dụ"</td></tr>';
+            return;
+        }
+        tbody.innerHTML = "";
+        batches.forEach((batch, idx) => {
+            const row = tbody.insertRow();
+            const productName = batch.productName || "Không tên";
+            const qty = batch.qty;
+            const importP = batch.importPrice;
+            const sellP = batch.sellPrice;
+            const totalImport = qty * importP;
+            const totalRevenue = qty * sellP;
+            const profit = totalRevenue - totalImport;
+            
+            row.insertCell(0).innerHTML = `<span class="product-name-badge">🏷️ ${escapeHtml(productName)}</span>`;
+            row.insertCell(1).innerText = qty;
+            row.insertCell(2).innerText = importP.toLocaleString();
+            row.insertCell(3).innerText = sellP.toLocaleString();
+            row.insertCell(4).innerText = totalImport.toLocaleString();
+            row.insertCell(5).innerText = totalRevenue.toLocaleString();
+            row.insertCell(6).innerText = profit.toLocaleString();
+            const delCell = row.insertCell(7);
+            const delBtn = document.createElement("button");
+            delBtn.innerText = "🗑️";
+            delBtn.className = "delete-row";
+            delBtn.onclick = () => deleteBatch(idx);
+            delCell.appendChild(delBtn);
+        });
+    }
+    
+    // Helper chống XSS
+    function escapeHtml(str) {
+        return str.replace(/[&<>]/g, function(m) {
+            if(m === '&') return '&amp;';
+            if(m === '<') return '&lt;';
+            if(m === '>') return '&gt;';
+            return m;
+        });
+    }
+    
+    function renderInvestorCapitalInputs() {
+        const container = document.getElementById("investorCapitalInputs");
+        container.innerHTML = "";
+        investors.forEach((inv, idx) => {
+            const div = document.createElement("div");
+            div.className = "investor-card";
+            div.innerHTML = `
+                <h4>${inv.name}</h4>
+                <input type="number" id="inv_capital_${idx}" value="${Math.round(inv.contributedCapital)}" step="1000" style="width:100%; margin:0.3rem 0;">
+                <div class="info-note">Vốn góp (nghìn VNĐ)</div>
+            `;
+            container.appendChild(div);
+        });
+    }
+    
+    function renderInvestorResult() {
+        const container = document.getElementById("investorResultGrid");
+        const shares = getProfitSharing();
+        const totalProfit = getTotalProfit();
+        const totalInvested = getTotalInvestedCapital();
+        
+        container.innerHTML = "";
+        if(totalInvested === 0 && totalProfit > 0) {
+            container.innerHTML = `<div class="info-note" style="color:red;">⚠️ Tổng vốn góp bằng 0, không thể chia lãi. Vui lòng nhập vốn cho các nhà đầu tư.</div>`;
+            return;
+        }
+        
+        for(let s of shares) {
+            const div = document.createElement("div");
+            div.className = "investor-card";
+            div.style.background = "#ecfdf5";
+            const percent = (s.ratio * 100).toFixed(1);
+            div.innerHTML = `
+                <h4>${s.name}</h4>
+                <div><strong>💰 Vốn góp:</strong> ${Math.round(s.contributedCapital).toLocaleString()} k</div>
+                <div class="profit-percent">📊 Tỷ lệ: ${percent}%</div>
+                <div><strong>✨ Lãi nhận:</strong> ${Math.round(s.profitReceived).toLocaleString()} k</div>
+                <div style="margin-top:8px; font-size:1.2rem; font-weight:800; color:#0b3b2f;">🏦 Tổng nhận: ${Math.round(s.totalReceive).toLocaleString()} k</div>
+            `;
+            container.appendChild(div);
+        }
+        
+        const explainDiv = document.getElementById("explainNote");
+        if(explainDiv) {
+            explainDiv.innerHTML = `✅ <strong>Công thức theo tỷ lệ vốn góp:</strong> Mỗi người nhận lãi = (Vốn người đó / Tổng vốn góp) × Tổng lợi nhuận (${totalProfit.toLocaleString()}k)<br>
+            💡 <strong>Ví dụ:</strong> Ai góp càng nhiều vốn thì phần lãi càng cao. Tổng vốn góp hiện tại: ${totalInvested.toLocaleString()}k`;
+        }
+    }
+    
+    function updateTotalsUI() {
+        const totalQty = batches.reduce((sum, b) => sum + b.qty, 0);
+        const totalCapital = getTotalImportCapital();
+        const totalRevenue = getTotalRevenue();
+        const totalProfit = getTotalProfit();
+        const totalInvested = getTotalInvestedCapital();
+        
+        document.getElementById("totalQtySpan").innerText = totalQty;
+        document.getElementById("totalCapitalSpan").innerText = totalCapital.toLocaleString();
+        document.getElementById("totalRevenueSpan").innerText = totalRevenue.toLocaleString();
+        document.getElementById("totalProfitSpan").innerText = totalProfit.toLocaleString();
+        document.getElementById("totalInvestedCapitalSpan").innerText = totalInvested.toLocaleString();
+    }
+    
+    // Event listeners
+    function bindEvents() {
+        document.getElementById("addBatchBtn").addEventListener("click", () => {
+            let productName = document.getElementById("productNameInput").value;
+            let qty = parseInt(document.getElementById("quantityInput").value);
+            let importPrice = parseFloat(document.getElementById("importPriceInput").value);
+            let sellPrice = parseFloat(document.getElementById("sellPriceInput").value);
+            addBatch(productName, qty, importPrice, sellPrice);
+        });
+        
+        document.getElementById("clearAllBtn").addEventListener("click", () => {
+            if(confirm("Xóa tất cả các lô hàng?")) {
+                clearAllBatches();
+            }
+        });
+        
+        document.getElementById("demoExampleBtn").addEventListener("click", () => {
+            if(confirm("Tải ví dụ 100 sản phẩm (5 lô 20sp) với tên sản phẩm mẫu?")) {
+                loadExampleData();
+            }
+        });
+        
+        document.getElementById("applyCapitalBtn").addEventListener("click", () => {
+            updateCapitalsFromInputs();
+            alert("Đã cập nhật vốn góp và chia lại lãi theo tỷ lệ mới!");
+        });
+        
+        document.getElementById("resetToImportCapitalBtn").addEventListener("click", () => {
+            resetToImportCapital();
+            alert("Đã đặt vốn mỗi người = tổng vốn nhập hàng / 3 (chia đều). Bạn có thể tùy chỉnh lại sau.");
+        });
+    }
+    
+    // Khởi tạo
+    loadData();
+    renderAll();
+    bindEvents();
+</script>
+</body>
+</html>
